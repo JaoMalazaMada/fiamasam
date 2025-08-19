@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Answer {
+  id         Int      @id @default(autoincrement())
+  answerText String   @db.VarChar(255)
+  isCorrect  Boolean  @default(false)
+  questionId Int
+  Question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade, map: "fk_answer_question")
+
+  @@index([questionId], map: "question_idx")
+}
+
+model Article {
+  id         Int                @id @default(autoincrement())
+  title      String             @db.VarChar(255)
+  content    String             @db.Text
+  visibility Article_visibility @default(PUBLIC)
+  authorId   Int?
+  createdAt  DateTime           @default(now()) @db.Timestamp(0)
+  updatedAt  DateTime           @updatedAt @db.Timestamp(0)
+  User       User?              @relation(fields: [authorId], references: [id], map: "fk_article_author")
+
+  // Nouveaux champs
+  imageUrl        String?  @db.VarChar(255)
+  metaTitle       String?  @db.VarChar(255)
+  metaDescription String?  @db.VarChar(255)
+  status          Article_status @default(DRAFT)
+
+  @@index([authorId], map: "author_idx")
+}
+
+model Question {
+  id           Int      @id @default(autoincrement())
+  questionText String   @db.Text
+  createdAt    DateTime @default(now()) @db.Timestamp(0)
+  updatedAt    DateTime @default(now()) @db.Timestamp(0)
+  Answer       Answer[]
+}
+
+model User {
+  id             Int       @id @default(autoincrement())
+  email          String    @unique(map: "email_unique") @db.VarChar(255)
+  hashedPassword String    @db.VarChar(255)
+  nom            String?   @db.VarChar(100)
+  prenom         String?   @db.VarChar(100)
+  role           User_role @default(USER)
+  createdAt      DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt      DateTime  @updatedAt @db.Timestamp(0)
+
+  // Auth fields
+  emailVerified        DateTime?
+  verificationToken    String?   @unique
+  passwordResetToken   String?   @unique
+  passwordResetExpires DateTime?
+  Article        Article[]
+}
+
+enum Article_visibility {
+  PUBLIC
+  MEMBRE
+  FONDATEUR
+}
+
+enum Article_status {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum User_role {
+  ADMIN
+  FONDATEUR
+  MEMBRE
+  USER
+}
